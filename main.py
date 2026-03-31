@@ -41,6 +41,7 @@ def calc_cloud_electric_force(plate_distance, cloud_height, q, PM_init, epsilon,
 
 # Constants
 time_step = 0.1
+rng = np.random.default_rng() # for randomizing stuff
 
 d_particle = 2.5e-6 # particle diameter (in meters I think, again this is from notes)
 A_particle = (math.pi / 4) * (d_particle) ** 2 # assuming spherical particles
@@ -99,8 +100,6 @@ def model(state, t):
     
     return [v[0], v[1], a[0], a[1]]
 
-
-
 # Simulations
 # ODE for predicting single particle movement in proximity to the tower
 # This can help determine how the tower affects certain particles and at what distances and stuff
@@ -121,6 +120,7 @@ for n in (range(num_samples)):
     sx, sy = r * np.cos(angle), np.random.uniform(0, cloud_height)
     
     # ODE (main calculations)
+    v_air = rng.random(2) * 2 - 1 # random 2 values for air (from -1 to 1)
     sol = odeint(model, [sx, sy, 0, 0], times)
     all_solutions.append(sol)
     
@@ -144,25 +144,33 @@ for t in times:
 print(f"\nFinal PM2.5 Level: {concentration_history[-1]:.2f} µg/m³")
 print(f"Net Change: {concentration_history[-1] - PM_init:.2f} µg/m³")
 # TODO There's a bunch of values we can calculate with the data, like this (tho it's 100 with our current setup)
-print(f"Tower Effectiveness: {(len(capture_times) / num_samples) * 100}%")
+print(f"Tower Effectiveness: {(sum(1 for t in capture_times if t != float('inf')) / num_samples) * 100}%") # messy but whatever
 
 # Plotting
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
 # Trajectory
-for s in all_solutions: 
+for s in all_solutions:
     axes[0, 0].plot(s[:, 0], s[:, 1], alpha=0.2)
-    # TODO Decide if you wanna disable this, it's kinda ugly (I added it in for clarity)
-    axes[0, 0].annotate( # Arrow for direction (ff there's a falloff, it points to 0,0 rather than falloff point)
-        '',
-        xy=(s[-1, 0], s[-1, 1]),
-        xytext=(s[0, 0], s[0, 1]),
-        arrowprops=dict(
-            arrowstyle='->',
-            lw=1.5,
-            mutation_scale=15     # Adjust arrow head size
-        ),
-    )
+    # Arrow pointing towards the travel direction of the particle
+    end_x, end_y = s[-1, 0], s[-1, 1]
+    dist = math.hypot(end_x, end_y)
+    if dist > 1e-6:
+        ux, uy = (end_x / dist), (end_y / dist) # unit vectors
+        arrow_len = min(0.25 * dist, 0.5)
+        # Tail is a step away from the head in the direction away from the tower
+        tail_x = end_x - ux * arrow_len
+        tail_y = end_y - uy * arrow_len
+        axes[0, 0].annotate(
+            '',
+            xy=(end_x, end_y),    # arrow head at particle endpoint
+            xytext=(tail_x, tail_y),
+            arrowprops=dict(
+                arrowstyle='->',
+                lw=1.5,
+                mutation_scale=15     # Adjust arrow head size
+            ),
+        )
 axes[0,0].set_title("Trajectories")
 
 # Concentration
