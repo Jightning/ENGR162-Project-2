@@ -4,8 +4,8 @@ import time
 
 motorL = Motor('D')
 motorR = Motor('A')
-sensor_front = UltrasonicSensor('A6')
-sensor_right = UltrasonicSensor('A2')
+sensor_front = UltrasonicSensor('6')
+sensor_right = UltrasonicSensor('2')
 imu = IMUSensor()
 
 # intial variables
@@ -35,19 +35,38 @@ def turn_left(speed=SPEED):
     startL(-speed)
     startR(speed)
 
-def dynamic_turn(speed=SPEED):
-    while True:
-        front_dist = sensor_front.getDist()
-        right_dist = sensor_right.getDist()
+def turn_90_degrees(turn_func, tolerance=2):
+    turn = 0.0
+    prev_time = time.time()
 
-        if front_dist > DIST_MAX or right_dist > DIST_MAX:
-            start(speed)
-            return
-        else:
-            if right_dist < DIST_MAX:
-                startL(speed)
+    turn_func()
+
+    while abs(turn) < abs(turn) - tolerance:
+        cur_time = time.time()
+        dt = cur_time - prev_time
+        prev_time = time.time()
+
+        gx, gy, gz = imu.getGyro()
+        turn += abs(gz) * dt
+
+
+def dynamic_turn(speed=SPEED):
+    try:
+        while True:
+            front_dist = sensor_front.getDist()
+            right_dist = sensor_right.getDist()
+
+            if front_dist > DIST_MAX or right_dist > DIST_MAX:
+                start(speed)
+                return
             else:
-                startR(speed)
+                if right_dist < DIST_MAX:
+                    startL(speed/4)
+                else:
+                    startR(speed/4)
+    except KeyboardInterrupt:
+        stop()
+        return
 
 
 prev_time = time.time()
@@ -58,21 +77,12 @@ try:
     while True:
         front_dist = sensor_front.getDist()
         right_dist = sensor_right.getDist()
-        # cur_time = time.time()
-        # dt = cur_time - prev_time
-        # gx, gy, gz = imu.getGyro()
-       
-        # turn += gz * dt
-        # print(turn, dt)
-       
-        # if (abs(turn) >= 80):
-        #     print("Yay")
-        #     stop()
-        #     break
 
         if front_dist > DIST_MAX:
-            dynamic_turn()
-            
+            if right_dist < DIST_MAX:
+                turn_90_degrees(turn_right(SPEED))
+            else:
+                turn_90_degrees(turn_left(SPEED))
 
         time.sleep(2)
 except KeyboardInterrupt:
