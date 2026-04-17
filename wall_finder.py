@@ -35,36 +35,46 @@ def turn_left(speed=SPEED):
     startL(-speed)
     startR(speed)
 
+def dynamic_turn(speed=SPEED):
+    while True:
+        front_dist = sensor_front.getDist()
+        right_dist = sensor_right.getDist()
+
+        if front_dist > DIST_MAX or right_dist > DIST_MAX:
+            start(speed)
+            return
+        else:
+            if right_dist < DIST_MAX:
+                startL(speed)
+            else:
+                startR(speed)
+
+
 prev_time = time.time()
 turn = 0
 
 try:
-    #start()
-    turn_right()
-
+    start()
     while True:
-        #front_dist = sensor_front.getDist()
-        #left_dist = sensor_left.getDist()
-        cur_time = time.time()
-        dt = cur_time - prev_time
-        gx, gy, gz = imu.getGyro()
+        front_dist = sensor_front.getDist()
+        right_dist = sensor_right.getDist()
+        # cur_time = time.time()
+        # dt = cur_time - prev_time
+        # gx, gy, gz = imu.getGyro()
        
-        turn += gz * dt
-        print(turn, dt)
+        # turn += gz * dt
+        # print(turn, dt)
        
-        if (abs(turn) >= 80):
-            print("Yay")
-            stop()
-            break
-       
-        prev_time = cur_time
-       
-    startL(100)
-    startR(100)
-    time.sleep(2)
- 
-               
-       
+        # if (abs(turn) >= 80):
+        #     print("Yay")
+        #     stop()
+        #     break
+
+        if front_dist > DIST_MAX:
+            dynamic_turn()
+            
+
+        time.sleep(2)
 except KeyboardInterrupt:
     stop()
     print("Code doth cease")
