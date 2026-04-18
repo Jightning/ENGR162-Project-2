@@ -13,11 +13,14 @@ imu = IMUSensor()
 SPEED = 20 # Base speed of the robot
 SLOW_SPEED = 5
 
+# TODO These need hella testing, especially target dist (Disable if too annoying)
 DIST_MIN = 15 # Distance considered too close in cm
 DIST_MAX = 25 # Max distance before wall isn't considered significant
+TARGET_DIST = 20 # Target distance to stay from wall
 
 TURN_SLOW_THRESHOLD = 8 # How many degrees before target to start slow turning
 GYRO_BIAS = 0.0 # Gets set later, for gyro error correction
+
 
 def stop():
     motorL.stop()

@@ -65,7 +65,7 @@ def calibrate_gyro(samples=200):
 def turn_degrees_pid(deg, clockwise=True, tolerance=2.0, timeout=5.0):
     target = float(deg) if clockwise else -float(deg)
     prev_error = target
-    heading = 0.0
+    total = 0.0 # total degrees turned
     integral = 0.0
 
     prev_time = time.time()
@@ -77,10 +77,10 @@ def turn_degrees_pid(deg, clockwise=True, tolerance=2.0, timeout=5.0):
         prev_time = cur_time
 
         gx, gy, gz = imu.getGyro()
-        heading += (gz - GYRO_BIAS) * dt
+        total += (gz - GYRO_BIAS) * dt
 
         # Error calculations
-        error = target - heading
+        error = target - total
         integral += error * dt
         derivative = (error - prev_error) / dt if dt > 0 else 0.0
         prev_error = error
@@ -89,7 +89,7 @@ def turn_degrees_pid(deg, clockwise=True, tolerance=2.0, timeout=5.0):
 
         # Clamp to ensure we don't go overboard lol
         new_speed = int(min(MOTOR_CMD_MAX, abs(adjustment)))
-        # Turn based on command
+        # Turn based on adjustment
         if adjustment >= 0:
             turn_right(new_speed)
         else:

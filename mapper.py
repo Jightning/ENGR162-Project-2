@@ -18,12 +18,15 @@ JSON_LOG = True # TODO save path to a json, set to false if it errors
 # initial variables
 SPEED = 20 # Base speed of the robot
 SLOW_SPEED = 5
+CELL_TRAVEL_TIME = 1.5 # TODO How long it takes to travel 1 "cell" 
+
+# TODO These need hella testing, especially target dist (Disable if too annoying)
 DIST_MIN = 15 # Distance considered too close in cm
 DIST_MAX = 25 # Max distance before wall isn't considered significant
+TARGET_DIST = 20 # Target distance to stay from wall (try to make the distance between walls divided by two)
 
 TURN_SLOW_THRESHOLD = 8 # How many degrees before target to start slow turning
 GYRO_BIAS = 0.0 # Gets set later, for gyro error correction
-CELL_TRAVEL_TIME = 1.5 # TODO How long it takes to travel 1 "cell" 
 
 def stop():
     motorL.stop()
@@ -123,6 +126,57 @@ def update_coordinates():
     elif direction == 2: y -= 1 # South
     elif direction == 3: x -= 1 # West
 
+def move_one_cell():
+    global last_error
+    start_time = time.time()
+    prev_time = time.time()
+
+    # TODO more PID since I gotta study for the final
+    # apparently for testing these values, do it like so:
+    # 1. Set both to 0
+    # 2. Steadily increase KP until the robot starts constantly moving in an S shape (this is the limit)
+    # 3. Slowly increase KD until it stops doing this S shape
+    KP = 2.0
+    KD = 1.5
+    MAX_ADJUSTMENT = SPEED - 5
+
+    last_error = 0
+    
+    while time.time() - start_time < CELL_TRAVEL_TIME:
+        front_dist = sensor_front.getDist
+        right_dist = sensor_right.getDist
+
+        # Wall
+        if front_dist < DIST_MIN:
+            break
+
+        # No wall on the right, just drive straight
+        if right_dist > DIST_MAX:
+            start(SPEED)
+            last_error = 0
+        else:
+            # Using proportional and derivative control
+            # No integral cause nah
+            cur_time = time.time()
+            dt = cur_time - prev_time
+            prev_time = cur_time 
+
+            error = TARGET_DIST - right_dist
+            derivative = (error - last_error) / dt # using last error rather than dt formula since error could reset to 0
+            
+            adjustment = (KP * error) + (KD * derivative)
+            adjustment = max(min(adjustment, MAX_ADJUSTMENT), -MAX_ADJUSTMENT)
+            # positive adj if turning left, negative if turning right
+            # TODO turning here is slightly different since its geared towards moving forward
+            startL(SPEED + adjustment)
+            startR(SPEED - adjustment)
+
+            last_error = error
+              
+        time.sleep(min(CELL_TRAVEL_TIME, 0.02))
+
+    stop()
+
 try:
     # Task 2
     # Uncomment 2 lines below, modify degrees and turn func
@@ -142,15 +196,17 @@ try:
             log(turned=True)
             
             # Travel one cell since its guaranteed
-            start(SPEED)
-            time.sleep(CELL_TRAVEL_TIME)
+            move_one_cell() # TODO Comment this and uncomment bottom two lines if there are issues
+            # start()
+            # time.sleep(CELL_TRAVEL_TIME)
 
             update_coordinates()
             log()
 
         elif front_dist > DIST_MIN: # Travel one cell if clear
-            start(SPEED)
-            time.sleep(CELL_TRAVEL_TIME)
+            move_one_cell() # TODO Comment this and uncomment bottom two lines if there are issues
+            # start()
+            # time.sleep(CELL_TRAVEL_TIME)
 
             update_coordinates()
             log()
