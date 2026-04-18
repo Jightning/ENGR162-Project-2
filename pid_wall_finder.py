@@ -114,7 +114,6 @@ try:
     # turn_degrees(turn_right, degrees=90.0)
     # return
 
-    start()
     while True:
         front_dist = sensor_front.getDist()
         right_dist = sensor_right.getDist()
@@ -122,10 +121,10 @@ try:
         # Task 1
         if right_dist > DIST_MAX: # default right turn if possible
             turn_degrees_pid(90.0, clockwise=True)
-
-        elif front_dist < DIST_MAX: # turn left otherwise
+        elif front_dist < DIST_MIN: # turn left otherwise
             turn_degrees_pid(90.0, clockwise=False)
-
+        else:
+            start() # TODO idk if this rerunning constantly is a good idea
 
         time.sleep(0.01)
 except KeyboardInterrupt:

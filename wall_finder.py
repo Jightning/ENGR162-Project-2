@@ -107,10 +107,19 @@ try:
 
         # Task 1
         if right_dist > DIST_MAX: # default right turn if possible
+            stop()
             turn_degrees(turn_right)
-
-        elif front_dist < DIST_MAX: # turn left otherwise
+        elif front_dist < DIST_MIN: # turn left otherwise
+            stop()
             turn_degrees(turn_left)
+        else:
+            start() # TODO idk if this rerunning constantly is a good idea
+
+        # TODO Minor turning for adjustments, probably won't work, more theoretical
+        # Uncomment if there are issues, could not work, but might also solve some problems
+        # Could also track the change in distance, if it's steadily increasing, minor turn right
+        # elif right_dist < DIST_MIN:
+        #     turn_degrees(turn_left, degrees=3.0, speed=SLOW_SPEED, tolerance=1.0)
 
         time.sleep(0.01)
 except KeyboardInterrupt:
