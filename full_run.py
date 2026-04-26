@@ -189,13 +189,14 @@ def get_z_score(vals, val):
 
     return (val - avg) / std
 
-def log(turned=False, heat_magnitude=0.0, magnetic_magnitude=0.0):
+def log(turned=False, heat_magnitude=0.0, magnetic_magnitude=0.0, exit_point=False):
     path.append({
         "pos": (x, y),
         "dir": directions[direction],
         "turned": turned,
         "heat_source": abs(heat_magnitude) >= HEAT_SOURCE_MAGNITUDE,
-        "magnetic_source": abs(magnetic_magnitude) >= MAGNET_SOURCE_MAGNITUDE
+        "magnetic_source": abs(magnetic_magnitude) >= MAGNET_SOURCE_MAGNITUDE,
+        "exit_point": exit_point
     })
     # print(f"({x}, {y}) going {directions[direction]}")
  
@@ -357,7 +358,7 @@ while time.time() - cur_time < 10 or not TIME_BASED:
         ir_left, ir_right = IR.value1, IR.value2 # Heat
         ir_avg = max(ir_left, ir_right)
         
-        if ir_avg > HEAT_SOURCE_MAGNITUDE or magnet_magnitude > MAGNET_SOURCE_MAGNITUDE: # Found a source
+        if abs(ir_avg) >= HEAT_SOURCE_MAGNITUDE or abs(magnet_magnitude) >= MAGNET_SOURCE_MAGNITUDE: # Found a source
             stop()
             print("Turning Around", right_dist, front_dist)
             turn_degrees_pid(clockwise=False, deg=180.0)
@@ -371,6 +372,7 @@ while time.time() - cur_time < 10 or not TIME_BASED:
             log(turned=True, heat_magnitude=ir_avg, magnetic_magnitude=magnet_magnitude)
         elif right_dist > DIST_MAX and front_dist > DIST_MAX and left_dist > DIST_MAX: # At an open space
             print("Open Space Found")
+            log(exit_point=True)
             break
         elif right_dist > DIST_MAX: # Turn right if clear
             start()
